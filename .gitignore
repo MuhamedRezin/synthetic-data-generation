@@ -1,0 +1,33 @@
+# Data files (too large for GitHub)
+data/creditcard.csv
+
+# Outputs
+outputs/
+
+# Logs
+*.log
+full_log.txt
+test_run.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# Jupyter
+.ipynb_checkpoints/
+notebooks/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Gemini
+.gemini/
+CLAUDE.md
+hello.py
