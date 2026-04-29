@@ -172,14 +172,12 @@ with st.sidebar:
 
 @st.cache_data
 def load_dataset(uploaded_file=None):
-    """Load dataset from file upload or default path."""
+    """Load dataset from file upload or default path (auto-downloads if needed)."""
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file)
     else:
-        default_path = os.path.join(project_root, "data", "creditcard.csv")
-        if not os.path.exists(default_path):
-            return None
-        df = pd.read_csv(default_path)
+        # load_data() will auto-download from OpenML if file is missing
+        df = load_data()
     
     # Preprocess inside the cached function to avoid 15-second delays on every run
     df = preprocess_data(df)
@@ -197,13 +195,13 @@ tab1, tab2, tab3, tab4 = st.tabs([
 
 
 # Load the dataset
-df = load_dataset(uploaded_file)
-
-if df is None:
+try:
+    with st.spinner("Loading dataset... (first run may download ~150MB from OpenML)"):
+        df = load_dataset(uploaded_file)
+except Exception as e:
     st.error(
-        "⚠️ Dataset not found! Please either:\n"
-        "1. Place `creditcard.csv` in the `data/` directory, or\n"
-        "2. Upload a CSV file using the sidebar.\n\n"
+        f"⚠️ Could not load dataset: {e}\n\n"
+        "Please upload a CSV file using the sidebar.\n"
         "Download from: https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud"
     )
     st.stop()

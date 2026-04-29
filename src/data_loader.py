@@ -2,7 +2,8 @@
 data_loader.py — Load and preprocess the Credit Card Fraud Detection dataset.
 
 Handles loading the raw CSV, basic preprocessing, class separation,
-and stratified train/test splitting.
+and stratified train/test splitting. Automatically downloads the dataset
+from OpenML if not found locally.
 """
 
 import os
@@ -11,9 +12,56 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 
+def _download_dataset(save_path):
+    """
+    Download the Credit Card Fraud dataset from OpenML and save locally.
+
+    Parameters
+    ----------
+    save_path : str
+        Path to save the downloaded CSV file.
+
+    Returns
+    -------
+    pd.DataFrame
+        The downloaded dataset.
+    """
+    print("Dataset not found locally. Downloading from OpenML...")
+    try:
+        from sklearn.datasets import fetch_openml
+
+        # Credit Card Fraud Detection dataset on OpenML (ID 1597)
+        data = fetch_openml(data_id=1597, as_frame=True, parser="auto")
+        df = data.frame
+
+        # Rename the target column to 'Class' if needed
+        if "Class" not in df.columns:
+            # OpenML may name the target differently
+            target_col = data.target_names[0] if hasattr(data, "target_names") and data.target_names else df.columns[-1]
+            df = df.rename(columns={target_col: "Class"})
+
+        # Ensure Class column is numeric (OpenML may return strings like '0', '1')
+        df["Class"] = pd.to_numeric(df["Class"], errors="coerce").fillna(0).astype(int)
+
+        # Save locally for future runs
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        df.to_csv(save_path, index=False)
+        print(f"Dataset downloaded and saved to: {save_path}")
+        return df
+
+    except Exception as e:
+        print(f"Auto-download failed: {e}")
+        raise FileNotFoundError(
+            "Could not download dataset automatically. "
+            "Please download 'creditcard.csv' from Kaggle and place it in the 'data/' directory.\n"
+            "Download link: https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud"
+        )
+
+
 def load_data(filepath=None):
     """
     Load the credit card fraud dataset from CSV.
+    If the file is not found, automatically downloads it from OpenML.
 
     Parameters
     ----------
@@ -31,11 +79,8 @@ def load_data(filepath=None):
         filepath = os.path.join(project_root, "data", "creditcard.csv")
 
     if not os.path.exists(filepath):
-        raise FileNotFoundError(
-            f"Dataset not found at '{filepath}'. "
-            "Please download 'creditcard.csv' from Kaggle and place it in the 'data/' directory.\n"
-            "Download link: https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud"
-        )
+        # Try to auto-download
+        return _download_dataset(filepath)
 
     print(f"Loading dataset from: {filepath}")
     df = pd.read_csv(filepath)
