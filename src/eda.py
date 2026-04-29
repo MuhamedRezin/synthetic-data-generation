@@ -123,8 +123,14 @@ def plot_feature_distributions(df, features=None, save=True):
 
     for i, feature in enumerate(features):
         ax = axes[i]
-        ax.hist(non_fraud[feature], bins=50, alpha=0.5, label="Non-Fraud", color="#2ecc71", density=True)
-        ax.hist(fraud[feature], bins=50, alpha=0.7, label="Fraud", color="#e74c3c", density=True)
+        # Extract as float64 numpy arrays and filter non-finite values
+        nf_vals = pd.to_numeric(non_fraud[feature], errors="coerce").values.astype(np.float64)
+        fr_vals = pd.to_numeric(fraud[feature], errors="coerce").values.astype(np.float64)
+        nf_vals = nf_vals[np.isfinite(nf_vals)]
+        fr_vals = fr_vals[np.isfinite(fr_vals)]
+
+        ax.hist(nf_vals, bins=50, alpha=0.5, label="Non-Fraud", color="#2ecc71", density=True)
+        ax.hist(fr_vals, bins=50, alpha=0.7, label="Fraud", color="#e74c3c", density=True)
         ax.set_title(f"Distribution of {feature}", fontsize=13, fontweight="bold")
         ax.set_xlabel(feature)
         ax.set_ylabel("Density")
@@ -256,18 +262,25 @@ def plot_amount_distribution(df, save=True):
     fraud = df[df["Class"] == 1]
     non_fraud = df[df["Class"] == 0]
 
+    # Extract as float64 numpy arrays and filter non-finite values
+    nf_amount = pd.to_numeric(non_fraud["Amount"], errors="coerce").values.astype(np.float64)
+    fr_amount = pd.to_numeric(fraud["Amount"], errors="coerce").values.astype(np.float64)
+    nf_amount = nf_amount[np.isfinite(nf_amount)]
+    fr_amount = fr_amount[np.isfinite(fr_amount)]
+
     # Log-scale histogram
-    axes[0].hist(non_fraud["Amount"], bins=100, alpha=0.5, label="Non-Fraud", color="#2ecc71", log=True)
-    axes[0].hist(fraud["Amount"], bins=100, alpha=0.7, label="Fraud", color="#e74c3c", log=True)
+    axes[0].hist(nf_amount, bins=100, alpha=0.5, label="Non-Fraud", color="#2ecc71", log=True)
+    axes[0].hist(fr_amount, bins=100, alpha=0.7, label="Fraud", color="#e74c3c", log=True)
     axes[0].set_title("Transaction Amount Distribution (Log Scale)", fontsize=13, fontweight="bold")
     axes[0].set_xlabel("Amount ($)")
     axes[0].set_ylabel("Count (Log)")
     axes[0].legend()
 
-    # Box plot
-    amount_data = pd.concat([non_fraud["Amount"].head(5000), fraud["Amount"]]).values
-    class_data = ["Non-Fraud"] * min(5000, len(non_fraud)) + ["Fraud"] * len(fraud)
-    
+    # Box plot using raw numpy arrays to avoid dtype issues
+    nf_sample = nf_amount[:5000]
+    amount_data = np.concatenate([nf_sample, fr_amount]).astype(np.float64)
+    class_data = ["Non-Fraud"] * len(nf_sample) + ["Fraud"] * len(fr_amount)
+
     df_plot = pd.DataFrame({
         "Amount": amount_data,
         "Class": class_data
