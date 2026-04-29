@@ -126,6 +126,9 @@ def preprocess_data(df):
     else:
         print("No duplicate rows found.")
 
+    # Reset index to avoid out-of-bounds/alignment errors in seaborn/pandas
+    df = df.reset_index(drop=True)
+
     # Ensure 'Class' column is integer
     df["Class"] = df["Class"].astype(int)
 
