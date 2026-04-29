@@ -40,8 +40,13 @@ def _download_dataset(save_path):
             target_col = data.target_names[0] if hasattr(data, "target_names") and data.target_names else df.columns[-1]
             df = df.rename(columns={target_col: "Class"})
 
-        # Ensure Class column is numeric (OpenML may return strings like '0', '1')
-        df["Class"] = pd.to_numeric(df["Class"], errors="coerce").fillna(0).astype(int)
+        # Ensure ALL columns are numeric (OpenML returns object/category dtypes)
+        for col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+
+        # Fill any NaN created by coercion and set Class as int
+        df = df.fillna(0)
+        df["Class"] = df["Class"].astype(int)
 
         # Save locally for future runs
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
@@ -128,6 +133,11 @@ def preprocess_data(df):
 
     # Reset index to avoid out-of-bounds/alignment errors in seaborn/pandas
     df = df.reset_index(drop=True)
+
+    # Ensure all columns are numeric (safety net for OpenML-sourced data)
+    for col in df.columns:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+    df = df.fillna(0)
 
     # Ensure 'Class' column is integer
     df["Class"] = df["Class"].astype(int)
