@@ -67,14 +67,11 @@ def plot_class_distribution(df, save=True):
     )
     axes[0].set_title("Class Distribution (Pie Chart)", fontsize=14, fontweight="bold")
 
-    # Count plot
-    sns.countplot(x="Class", data=df, ax=axes[1], palette={0: "#2ecc71", 1: "#e74c3c"},
-                  hue="Class", legend=False)
+    # Count plot (using matplotlib bar to avoid seaborn/pandas mergesort bugs on some dtypes)
+    axes[1].bar(["Non-Fraud (0)", "Fraud (1)"], class_counts.values, color=["#2ecc71", "#e74c3c"])
     axes[1].set_title("Class Distribution (Count Plot)", fontsize=14, fontweight="bold")
     axes[1].set_xlabel("Class")
     axes[1].set_ylabel("Count")
-    axes[1].set_xticks([0, 1])
-    axes[1].set_xticklabels(["Non-Fraud (0)", "Fraud (1)"])
 
     # Add count annotations
     for i, count in enumerate(class_counts.values):
